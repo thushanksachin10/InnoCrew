@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>AI Logistics Agent v2.0</title>
-
+  <title>AI Logistics Agent</title>
   <style>
     * {
       margin: 0;
@@ -12,7 +11,7 @@
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       display: flex;
       justify-content: center;
@@ -21,332 +20,594 @@
       padding: 20px;
     }
 
-    .container {
-      display: flex;
-      gap: 20px;
-      max-width: 1200px;
-      width: 100%;
-    }
-
     .phone {
       width: 380px;
-      height: 680px;
+      height: 700px;
       background: #fff;
-      border-radius: 25px;
+      border-radius: 40px;
       display: flex;
       flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      position: relative;
+      border: 12px solid #111;
     }
 
     .header {
       background: linear-gradient(135deg, #075e54 0%, #128c7e 100%);
       color: white;
-      padding: 15px;
-      text-align: center;
-      font-weight: bold;
+      padding: 20px;
+      position: relative;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .header h2 {
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .user-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .user-selector {
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 160px;
+      justify-content: space-between;
+      backdrop-filter: blur(10px);
+      transition: all 0.3s;
+    }
+
+    .user-selector:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      min-width: 220px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      z-index: 1000;
+      border-radius: 15px;
+      overflow: hidden;
+      margin-top: 10px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .dropdown-content.show {
+      display: block;
+      animation: slideDown 0.2s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .user-option {
+      padding: 14px 16px;
+      cursor: pointer;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.2s;
+    }
+
+    .user-option:hover {
+      background: #f8f8f8;
+    }
+
+    .user-option.active {
+      background: #e8f5e8;
+    }
+
+    .user-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 16px;
     }
 
+    .manager-icon { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .driver-icon { background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white; }
+    .customer-icon { background: linear-gradient(135deg, #FF9800, #F57C00); color: white; }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 2px;
+    }
+
+    .user-phone {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .notification-badge {
+      background: #ff3b30;
+      color: white;
+      border-radius: 10px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
+    }
+
     .role-badge {
-      background: rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.15);
       padding: 4px 12px;
       border-radius: 12px;
-      font-size: 11px;
-      margin-top: 5px;
+      font-size: 12px;
       display: inline-block;
+      backdrop-filter: blur(10px);
     }
 
     .chat {
       flex: 1;
       padding: 15px;
       overflow-y: auto;
-      background: #e5ddd5;
-      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50" y="50" font-size="40" fill="%23d4ccc4" opacity="0.1">📦</text></svg>');
+      background: #efeae2;
+      background-image: linear-gradient(rgba(220, 220, 220, 0.1) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(220, 220, 220, 0.1) 1px, transparent 1px);
+      background-size: 20px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .msg {
-      max-width: 75%;
-      padding: 10px 14px;
-      margin: 8px 0;
-      border-radius: 8px;
-      font-size: 14px;
+      max-width: 85%;
+      padding: 12px 16px;
+      margin: 4px 0;
+      border-radius: 18px;
+      font-size: 14.5px;
       white-space: pre-wrap;
-      line-height: 1.4;
+      line-height: 1.5;
       word-wrap: break-word;
+      position: relative;
+      animation: fadeIn 0.3s ease-out;
     }
 
-    .user {
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .user-msg {
       background: #dcf8c6;
       margin-left: auto;
-      border-bottom-right-radius: 2px;
+      border-bottom-right-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     }
 
-    .bot {
-      background: #fff;
+    .bot-msg {
+      background: white;
       margin-right: auto;
-      border-bottom-left-radius: 2px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.08);
     }
 
-    .input-box {
-      display: flex;
-      border-top: 1px solid #ddd;
-      background: #f0f0f0;
-      padding: 10px;
-    }
-
-    .input-box input {
-      flex: 1;
-      padding: 12px 15px;
-      border: none;
-      outline: none;
-      font-size: 14px;
-      border-radius: 25px;
-      background: white;
-    }
-
-    .input-box button {
-      margin-left: 10px;
-      padding: 12px 20px;
-      background: #128c7e;
-      color: white;
-      border: none;
-      cursor: pointer;
-      border-radius: 25px;
-      font-weight: bold;
-      transition: background 0.3s;
-    }
-
-    .input-box button:hover {
-      background: #075e54;
-    }
-
-    .control-panel {
-      background: white;
+    .notification {
+      background: #ffecb3;
+      border: 1px solid #ffd54f;
+      margin: 12px auto;
+      max-width: 90%;
+      text-align: center;
+      padding: 10px 15px;
       border-radius: 15px;
-      padding: 25px;
-      width: 320px;
-      height: fit-content;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    }
-
-    .control-panel h3 {
-      color: #075e54;
-      margin-bottom: 20px;
-      font-size: 18px;
-    }
-
-    .role-selector {
-      margin-bottom: 20px;
-    }
-
-    .role-btn {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border: 2px solid #075e54;
-      background: white;
-      color: #075e54;
-      border-radius: 8px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.3s;
-    }
-
-    .role-btn:hover {
-      background: #075e54;
-      color: white;
-    }
-
-    .role-btn.active {
-      background: #128c7e;
-      color: white;
-      border-color: #128c7e;
-    }
-
-    .quick-commands {
-      margin-top: 20px;
-      font-size: 12px;
-    }
-
-    .quick-commands h4 {
-      color: #666;
-      margin-bottom: 10px;
       font-size: 13px;
+      color: #5d4037;
+      animation: pulse 2s infinite;
+      font-weight: 500;
     }
 
-    .quick-cmd {
-      background: #f0f0f0;
-      padding: 8px 12px;
-      margin: 5px 0;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.3s;
-      font-family: monospace;
-    }
-
-    .quick-cmd:hover {
-      background: #dcf8c6;
-    }
-
-    .stats {
-      background: #f9f9f9;
-      padding: 15px;
-      border-radius: 8px;
-      margin-top: 20px;
-      font-size: 12px;
-    }
-
-    .stats .stat-item {
-      display: flex;
-      justify-content: space-between;
-      margin: 8px 0;
-      padding: 5px 0;
-      border-bottom: 1px solid #eee;
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
     }
 
     .timestamp {
       font-size: 11px;
-      color: #999;
+      color: rgba(0,0,0,0.45);
+      margin-top: 6px;
       text-align: right;
-      margin-top: 4px;
     }
 
-    @media (max-width: 768px) {
-      .container {
-        flex-direction: column;
-        align-items: center;
-      }
-      
-      .phone, .control-panel {
-        width: 100%;
-        max-width: 380px;
-      }
+    .options {
+      background: #f0f0f0;
+      border-radius: 15px;
+      padding: 12px;
+      margin: 8px 0;
+      max-width: 90%;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .option-btn {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin: 6px 0;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .option-btn:hover {
+      background: #e8f5e8;
+      border-color: #128c7e;
+      transform: translateX(5px);
+    }
+
+    .option-btn:active {
+      transform: translateX(0);
+    }
+
+    .input-box {
+      display: flex;
+      border-top: 1px solid #e0e0e0;
+      background: #f0f0f0;
+      padding: 15px;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .input-box input {
+      flex: 1;
+      padding: 14px 18px;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      border-radius: 25px;
+      background: white;
+      transition: all 0.3s;
+    }
+
+    .input-box input:focus {
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    }
+
+    .input-box button {
+      padding: 14px 24px;
+      background: #128c7e;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 25px;
+      font-weight: 600;
+      transition: all 0.3s;
+      min-width: 90px;
+    }
+
+    .input-box button:hover {
+      background: #075e54;
+      transform: translateY(-2px);
+    }
+
+    .input-box button:active {
+      transform: translateY(0);
+    }
+
+    /* Scrollbar styling */
+    .chat::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .chat::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.1);
+      border-radius: 3px;
+    }
+
+    .chat::-webkit-scrollbar-thumb:hover {
+      background: rgba(0,0,0,0.2);
     }
   </style>
 </head>
 
 <body>
 
-<div class="container">
-  <!-- Chat Interface -->
-  <div class="phone">
-    <div class="header">
-      <div>🚚 AI Logistics Agent v2.0</div>
-      <div class="role-badge" id="roleBadge">Manager</div>
+<div class="phone">
+  <div class="header">
+    <div class="header-top">
+      <h2>🚚 Logistics Agent</h2>
+      <div class="user-dropdown" id="userDropdown">
+        <button class="user-selector" onclick="toggleDropdown()">
+          <span id="currentUserName">👔 Manager</span>
+          <span>▼</span>
+        </button>
+        <div class="dropdown-content" id="dropdownContent">
+          <div class="user-option active" onclick="selectUser('manager')">
+            <div class="user-icon manager-icon">👔</div>
+            <div class="user-info">
+              <div class="user-name">Manager</div>
+              <div class="user-phone">+919999999999</div>
+            </div>
+          </div>
+          <div class="user-option" onclick="selectUser('driver1')">
+            <div class="user-icon driver-icon">🚛</div>
+            <div class="user-info">
+              <div class="user-name">Rajesh Kumar</div>
+              <div class="user-phone">+919876543210</div>
+            </div>
+            <div class="notification-badge">2</div>
+          </div>
+          <div class="user-option" onclick="selectUser('driver2')">
+            <div class="user-icon driver-icon">🚛</div>
+            <div class="user-info">
+              <div class="user-name">Suresh Patil</div>
+              <div class="user-phone">+919876543211</div>
+            </div>
+          </div>
+          <div class="user-option" onclick="selectUser('customer')">
+            <div class="user-icon customer-icon">📦</div>
+            <div class="user-info">
+              <div class="user-name">Customer</div>
+              <div class="user-phone">+918888888888</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-
-    <div id="chat" class="chat"></div>
-
-    <div class="input-box">
-      <input id="message" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendMessage()" />
-      <button onclick="sendMessage()">Send</button>
-    </div>
+    <div class="role-badge" id="roleBadge">Fast Logistics Pvt Ltd</div>
   </div>
 
-  <!-- Control Panel -->
-  <div class="control-panel">
-    <h3>👤 Select User Role</h3>
-    
-    <div class="role-selector">
-      <button class="role-btn active" onclick="selectRole('manager', '+919999999999')">
-        👔 Manager / Owner
-      </button>
-      <button class="role-btn" onclick="selectRole('driver', '+919876543210')">
-        🚛 Driver (Rajesh Kumar)
-      </button>
-      <button class="role-btn" onclick="selectRole('customer', '+918888888888')">
-        📦 Customer
-      </button>
-    </div>
+  <div id="chat" class="chat"></div>
 
-    <div class="quick-commands">
-      <h4>⚡ Quick Commands</h4>
-      <div id="quickCommands">
-        <!-- Commands will be populated based on role -->
-      </div>
-    </div>
-
-    <div class="stats">
-      <h4 style="margin-bottom: 10px; color: #075e54;">📊 Session Stats</h4>
-      <div class="stat-item">
-        <span>Messages:</span>
-        <span id="msgCount">0</span>
-      </div>
-      <div class="stat-item">
-        <span>Current Role:</span>
-        <span id="currentRole">Manager</span>
-      </div>
-    </div>
+  <div class="input-box">
+    <input id="message" placeholder="Type a message..." 
+           onkeypress="if(event.key==='Enter')sendMessage()" />
+    <button onclick="sendMessage()">Send</button>
   </div>
 </div>
 
 <script>
-let currentRole = 'manager';
-let currentPhone = '+919999999999';
-let messageCount = 0;
+// User data
+const users = {
+  manager: {
+    id: 'manager',
+    name: '👔 Manager',
+    phone: '+919999999999',
+    role: 'manager',
+    icon: '👔',
+    unread: 0,
+    messages: [
+      {
+        type: 'bot',
+        text: '👋 Welcome Manager!\n\n📋 *Available Commands:*\n\n1. Plan a trip:\n   `START TRIP FROM Mumbai TO Delhi`\n\n2. Check fleet status:\n   `FLEET STATUS`\n\n3. View active trips:\n   `ACTIVE TRIPS`\n\nTry: `START TRIP FROM Pune TO Nagpur`',
+        time: '11:45 AM'
+      }
+    ]
+  },
+  driver1: {
+    id: 'driver1',
+    name: '🚛 Rajesh Kumar',
+    phone: '+919876543210',
+    role: 'driver',
+    icon: '🚛',
+    unread: 2,
+    messages: [
+      {
+        type: 'bot',
+        text: '👋 Welcome Driver! No active trips assigned.',
+        time: '10:30 AM'
+      },
+      {
+        type: 'bot',
+        text: '🚚 *New Trip Assigned!*\n\n📍 *Route:* Mumbai → Delhi\n📏 *Distance:* 1400 km\n⏱️ *ETA:* 25 hours\n💰 *Rate:* ₹12/km\n\n*Reply with:*\n1️⃣ START - Accept & start trip\n2️⃣ SHARE LOCATION\n3️⃣ DELAY - Report delay\n\nOr type HELP for more options.',
+        time: '11:15 AM'
+      }
+    ]
+  },
+  driver2: {
+    id: 'driver2',
+    name: '🚛 Suresh Patil',
+    phone: '+919876543211',
+    role: 'driver',
+    icon: '🚛',
+    unread: 0,
+    messages: [
+      {
+        type: 'bot',
+        text: '👋 Welcome Driver! Your truck is currently on route from Pune to Mumbai.',
+        time: '09:45 AM'
+      }
+    ]
+  },
+  customer: {
+    id: 'customer',
+    name: '📦 Customer',
+    phone: '+918888888888',
+    role: 'customer',
+    icon: '📦',
+    unread: 0,
+    messages: [
+      {
+        type: 'bot',
+        text: '👋 Hi! I can help you book loads for transport.\n\n📦 *Load Booking Service:*\n\n*Format:*\n`LOAD <weight>kg <pickup> to <dropoff>`\n\n*Examples:*\n• `LOAD 500kg Mumbai to Pune`\n• `LOAD 1000kg Delhi to Jaipur`\n• `LOAD 300kg Bangalore to Chennai`\n\nType HELP for more options.',
+        time: '09:30 AM'
+      }
+    ]
+  }
+};
 
-const roleCommands = {
-  manager: [
-    'START TRIP FROM Mumbai TO Delhi',
-    'START TRIP FROM Pune TO Nagpur',
-    'FLEET STATUS',
-    'HELP'
+// Role-based quick replies
+const quickReplies = {
+  manager: [],
+  driver1: [
+    { emoji: '1️⃣', text: 'START', command: '1️⃣ START' },
+    { emoji: '2️⃣', text: 'SHARE LOCATION', command: '2️⃣ SHARE LOCATION' },
+    { emoji: '3️⃣', text: 'DELAY', command: '3️⃣ DELAY' },
+    { emoji: '✅', text: 'ARRIVED', command: 'ARRIVED' },
+    { emoji: '❓', text: 'HELP', command: 'HELP' }
   ],
-  driver: [
-    'START',
-    'SHARE LOCATION',
-    'DELAY',
-    'ARRIVED',
-    'HELP'
+  driver2: [
+    { emoji: '1️⃣', text: 'START', command: '1️⃣ START' },
+    { emoji: '2️⃣', text: 'SHARE LOCATION', command: '2️⃣ SHARE LOCATION' },
+    { emoji: '3️⃣', text: 'DELAY', command: '3️⃣ DELAY' },
+    { emoji: '✅', text: 'ARRIVED', command: 'ARRIVED' },
+    { emoji: '❓', text: 'HELP', command: 'HELP' }
   ],
   customer: [
-    'LOAD 500kg Mumbai to Pune',
-    'LOAD 1000kg Delhi to Jaipur',
-    'HELP'
+    { emoji: '📦', text: 'LOAD 500kg Mumbai to Pune', command: 'LOAD 500kg Mumbai to Pune' },
+    { emoji: '📦', text: 'LOAD 1000kg Delhi to Jaipur', command: 'LOAD 1000kg Delhi to Jaipur' },
+    { emoji: '📍', text: 'CHECK STATUS', command: 'CHECK STATUS' },
+    { emoji: '❓', text: 'HELP', command: 'HELP' }
   ]
 };
 
-function selectRole(role, phone) {
-  currentRole = role;
-  currentPhone = phone;
+let currentUser = 'manager';
+
+function toggleDropdown() {
+  const dropdown = document.getElementById('dropdownContent');
+  dropdown.classList.toggle('show');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(event) {
+  const dropdown = document.getElementById('userDropdown');
+  if (!dropdown.contains(event.target)) {
+    const dropdownContent = document.getElementById('dropdownContent');
+    dropdownContent.classList.remove('show');
+  }
+});
+
+function selectUser(userId) {
+  toggleDropdown();
+  
+  // Update dropdown active state
+  document.querySelectorAll('.user-option').forEach(option => {
+    option.classList.remove('active');
+  });
+  document.querySelector(`.user-option[onclick*="${userId}"]`).classList.add('active');
+  
+  // Switch user
+  switchUser(userId);
+}
+
+function switchUser(userId) {
+  const user = users[userId];
+  
+  // Reset unread for this user
+  user.unread = 0;
   
   // Update UI
-  document.getElementById('roleBadge').textContent = 
-    role.charAt(0).toUpperCase() + role.slice(1);
-  document.getElementById('currentRole').textContent = 
-    role.charAt(0).toUpperCase() + role.slice(1);
+  currentUser = userId;
+  document.getElementById('currentUserName').textContent = user.name;
+  document.getElementById('roleBadge').textContent = `${user.role.charAt(0).toUpperCase() + user.role.slice(1)} - Fast Logistics`;
   
-  // Update active button
-  document.querySelectorAll('.role-btn').forEach(btn => {
-    btn.classList.remove('active');
-  });
-  event.target.classList.add('active');
+  // Remove notification badge for this user
+  const badge = document.querySelector(`.user-option[onclick*="${userId}"] .notification-badge`);
+  if (badge) {
+    badge.remove();
+  }
   
-  // Update quick commands
-  updateQuickCommands();
+  // Load user's messages
+  loadUserMessages();
   
-  // Add system message
+  // Add system notification
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   const chat = document.getElementById('chat');
-  chat.innerHTML += `<div class="msg bot">🔄 Switched to ${role} mode</div>`;
+  chat.innerHTML += `
+    <div class="notification">
+      🔄 Switched to ${user.role} mode
+    </div>
+  `;
+  
   chat.scrollTop = chat.scrollHeight;
 }
 
-function updateQuickCommands() {
-  const container = document.getElementById('quickCommands');
-  container.innerHTML = '';
+function loadUserMessages() {
+  const chat = document.getElementById('chat');
+  const user = users[currentUser];
   
-  roleCommands[currentRole].forEach(cmd => {
-    const div = document.createElement('div');
-    div.className = 'quick-cmd';
-    div.textContent = cmd;
-    div.onclick = () => {
-      document.getElementById('message').value = cmd;
-      sendMessage();
-    };
-    container.appendChild(div);
+  chat.innerHTML = '';
+  
+  // Add user's message history
+  user.messages.forEach(msg => {
+    const msgClass = msg.type === 'user' ? 'user-msg' : 'bot-msg';
+    chat.innerHTML += `
+      <div class="msg ${msgClass}">
+        ${escapeHtml(msg.text)}
+        <div class="timestamp">${msg.time}</div>
+      </div>
+    `;
   });
+  
+  // Show quick reply options for current user
+  showQuickReplies();
+}
+
+function showQuickReplies() {
+  const chat = document.getElementById('chat');
+  const replies = quickReplies[currentUser];
+  
+  if (replies && replies.length > 0) {
+    let optionsHtml = '<div class="options">';
+    replies.forEach(reply => {
+      optionsHtml += `
+        <button class="option-btn" onclick="sendQuickReply('${reply.command}')">
+          <span style="font-size: 16px;">${reply.emoji}</span>
+          ${reply.text}
+        </button>
+      `;
+    });
+    optionsHtml += '</div>';
+    chat.innerHTML += optionsHtml;
+  }
+  
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function sendQuickReply(command) {
+  document.getElementById('message').value = command;
+  sendMessage();
 }
 
 async function sendMessage() {
@@ -357,40 +618,87 @@ async function sendMessage() {
   const chat = document.getElementById('chat');
   const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-  // User message
+  // Add user message
   chat.innerHTML += `
-    <div class="msg user">
+    <div class="msg user-msg">
       ${escapeHtml(text)}
       <div class="timestamp">${now}</div>
     </div>
   `;
+  
+  // Save message to user's history
+  users[currentUser].messages.push({
+    type: 'user',
+    text: text,
+    time: now
+  });
+  
+  // Simulate notifications to other users
+  if (currentUser === 'manager' && text.startsWith('START TRIP FROM')) {
+    // Parse the trip info
+    const match = text.match(/START TRIP FROM (.+?) TO (.+)/i);
+    if (match) {
+      const origin = match[1];
+      const destination = match[2];
+      
+      // Notify driver1
+      users.driver1.messages.push({
+        type: 'bot',
+        text: `🚚 *New Trip Assigned!*\n\n📍 *Route:* ${origin} → ${destination}\n📏 *Distance:* 1400 km (approx)\n⏱️ *ETA:* 25 hours\n💰 *Rate:* ₹12/km\n\n*Reply with:*\n1️⃣ START - Accept & start trip\n2️⃣ SHARE LOCATION\n3️⃣ DELAY - Report delay`,
+        time: now
+      });
+      users.driver1.unread = 1;
+      
+      // Update notification badge
+      const driverOption = document.querySelector('.user-option[onclick*="driver1"]');
+      if (!driverOption.querySelector('.notification-badge')) {
+        const badge = document.createElement('div');
+        badge.className = 'notification-badge';
+        badge.textContent = '1';
+        driverOption.appendChild(badge);
+      }
+    }
+  }
+  
   input.value = "";
-  messageCount++;
-  document.getElementById('msgCount').textContent = messageCount;
 
   // Send to backend
   try {
+    const user = users[currentUser];
     const res = await fetch("/message", {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded"
       },
-      body: `message=${encodeURIComponent(text)}&phone=${encodeURIComponent(currentPhone)}`
+      body: `message=${encodeURIComponent(text)}&phone=${encodeURIComponent(user.phone)}`
     });
 
     const data = await res.json();
 
-    // Bot reply
+    // Add bot reply
     chat.innerHTML += `
-      <div class="msg bot">
+      <div class="msg bot-msg">
         ${escapeHtml(data.reply)}
         <div class="timestamp">${now}</div>
       </div>
     `;
+    
+    // Save bot message to history
+    users[currentUser].messages.push({
+      type: 'bot',
+      text: data.reply,
+      time: now
+    });
+    
+    // Show quick replies again after bot response
+    setTimeout(() => {
+      showQuickReplies();
+    }, 300);
+    
   } catch (error) {
     chat.innerHTML += `
-      <div class="msg bot">
-        ❌ Error: ${error.message}
+      <div class="msg bot-msg">
+        ❌ Error: Could not connect to server. Please try again.
         <div class="timestamp">${now}</div>
       </div>
     `;
@@ -406,19 +714,16 @@ function escapeHtml(text) {
 }
 
 // Initialize
-updateQuickCommands();
-
-// Welcome message
 window.onload = () => {
-  const chat = document.getElementById('chat');
-  chat.innerHTML = `
-    <div class="msg bot">
-      👋 Welcome to AI Logistics Agent v2.0!<br><br>
-      Select your role on the right and start chatting.<br><br>
-      Type HELP for available commands.
-      <div class="timestamp">${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-    </div>
-  `;
+  loadUserMessages();
+  
+  // Add click outside to close dropdown
+  document.addEventListener('click', function(event) {
+    const dropdown = document.getElementById('dropdownContent');
+    if (!event.target.closest('.user-dropdown')) {
+      dropdown.classList.remove('show');
+    }
+  });
 };
 </script>
 
