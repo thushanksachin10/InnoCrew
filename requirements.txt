@@ -1,4 +1,7 @@
-fastapi
-uvicorn
-python-multipart
-requests
+fastapi==0.104.1
+uvicorn==0.24.0
+python-multipart==0.0.6
+requests==2.31.0
+geopy==2.4.1
+numpy==1.24.3
+pandas==2.0.3
