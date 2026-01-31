@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Logistics Agent v2.0</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      display: flex;
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+    }
+
+    .phone {
+      width: 380px;
+      height: 680px;
+      background: #fff;
+      border-radius: 25px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .header {
+      background: linear-gradient(135deg, #075e54 0%, #128c7e 100%);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .role-badge {
+      background: rgba(255,255,255,0.2);
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      margin-top: 5px;
+      display: inline-block;
+    }
+
+    .chat {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #e5ddd5;
+      background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><text x="50" y="50" font-size="40" fill="%23d4ccc4" opacity="0.1">📦</text></svg>');
+    }
+
+    .msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      margin: 8px 0;
+      border-radius: 8px;
+      font-size: 14px;
+      white-space: pre-wrap;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+
+    .user {
+      background: #dcf8c6;
+      margin-left: auto;
+      border-bottom-right-radius: 2px;
+    }
+
+    .bot {
+      background: #fff;
+      margin-right: auto;
+      border-bottom-left-radius: 2px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .input-box {
+      display: flex;
+      border-top: 1px solid #ddd;
+      background: #f0f0f0;
+      padding: 10px;
+    }
+
+    .input-box input {
+      flex: 1;
+      padding: 12px 15px;
+      border: none;
+      outline: none;
+      font-size: 14px;
+      border-radius: 25px;
+      background: white;
+    }
+
+    .input-box button {
+      margin-left: 10px;
+      padding: 12px 20px;
+      background: #128c7e;
+      color: white;
+      border: none;
+      cursor: pointer;
+      border-radius: 25px;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+
+    .input-box button:hover {
+      background: #075e54;
+    }
+
+    .control-panel {
+      background: white;
+      border-radius: 15px;
+      padding: 25px;
+      width: 320px;
+      height: fit-content;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    }
+
+    .control-panel h3 {
+      color: #075e54;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .role-selector {
+      margin-bottom: 20px;
+    }
+
+    .role-btn {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 2px solid #075e54;
+      background: white;
+      color: #075e54;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .role-btn:hover {
+      background: #075e54;
+      color: white;
+    }
+
+    .role-btn.active {
+      background: #128c7e;
+      color: white;
+      border-color: #128c7e;
+    }
+
+    .quick-commands {
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    .quick-commands h4 {
+      color: #666;
+      margin-bottom: 10px;
+      font-size: 13px;
+    }
+
+    .quick-cmd {
+      background: #f0f0f0;
+      padding: 8px 12px;
+      margin: 5px 0;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-family: monospace;
+    }
+
+    .quick-cmd:hover {
+      background: #dcf8c6;
+    }
+
+    .stats {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    .stats .stat-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 8px 0;
+      padding: 5px 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .timestamp {
+      font-size: 11px;
+      color: #999;
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .phone, .control-panel {
+        width: 100%;
+        max-width: 380px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <!-- Chat Interface -->
+  <div class="phone">
+    <div class="header">
+      <div>🚚 AI Logistics Agent v2.0</div>
+      <div class="role-badge" id="roleBadge">Manager</div>
+    </div>
+
+    <div id="chat" class="chat"></div>
+
+    <div class="input-box">
+      <input id="message" placeholder="Type a message..." onkeypress="if(event.key==='Enter')sendMessage()" />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <!-- Control Panel -->
+  <div class="control-panel">
+    <h3>👤 Select User Role</h3>
+    
+    <div class="role-selector">
+      <button class="role-btn active" onclick="selectRole('manager', '+919999999999')">
+        👔 Manager / Owner
+      </button>
+      <button class="role-btn" onclick="selectRole('driver', '+919876543210')">
+        🚛 Driver (Rajesh Kumar)
+      </button>
+      <button class="role-btn" onclick="selectRole('customer', '+918888888888')">
+        📦 Customer
+      </button>
+    </div>
+
+    <div class="quick-commands">
+      <h4>⚡ Quick Commands</h4>
+      <div id="quickCommands">
+        <!-- Commands will be populated based on role -->
+      </div>
+    </div>
+
+    <div class="stats">
+      <h4 style="margin-bottom: 10px; color: #075e54;">📊 Session Stats</h4>
+      <div class="stat-item">
+        <span>Messages:</span>
+        <span id="msgCount">0</span>
+      </div>
+      <div class="stat-item">
+        <span>Current Role:</span>
+        <span id="currentRole">Manager</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentRole = 'manager';
+let currentPhone = '+919999999999';
+let messageCount = 0;
+
+const roleCommands = {
+  manager: [
+    'START TRIP FROM Mumbai TO Delhi',
+    'START TRIP FROM Pune TO Nagpur',
+    'FLEET STATUS',
+    'HELP'
+  ],
+  driver: [
+    'START',
+    'SHARE LOCATION',
+    'DELAY',
+    'ARRIVED',
+    'HELP'
+  ],
+  customer: [
+    'LOAD 500kg Mumbai to Pune',
+    'LOAD 1000kg Delhi to Jaipur',
+    'HELP'
+  ]
+};
+
+function selectRole(role, phone) {
+  currentRole = role;
+  currentPhone = phone;
+  
+  // Update UI
+  document.getElementById('roleBadge').textContent = 
+    role.charAt(0).toUpperCase() + role.slice(1);
+  document.getElementById('currentRole').textContent = 
+    role.charAt(0).toUpperCase() + role.slice(1);
+  
+  // Update active button
+  document.querySelectorAll('.role-btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  // Update quick commands
+  updateQuickCommands();
+  
+  // Add system message
+  const chat = document.getElementById('chat');
+  chat.innerHTML += `<div class="msg bot">🔄 Switched to ${role} mode</div>`;
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function updateQuickCommands() {
+  const container = document.getElementById('quickCommands');
+  container.innerHTML = '';
+  
+  roleCommands[currentRole].forEach(cmd => {
+    const div = document.createElement('div');
+    div.className = 'quick-cmd';
+    div.textContent = cmd;
+    div.onclick = () => {
+      document.getElementById('message').value = cmd;
+      sendMessage();
+    };
+    container.appendChild(div);
+  });
+}
+
+async function sendMessage() {
+  const input = document.getElementById('message');
+  const text = input.value.trim();
+  if (!text) return;
+
+  const chat = document.getElementById('chat');
+  const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+  // User message
+  chat.innerHTML += `
+    <div class="msg user">
+      ${escapeHtml(text)}
+      <div class="timestamp">${now}</div>
+    </div>
+  `;
+  input.value = "";
+  messageCount++;
+  document.getElementById('msgCount').textContent = messageCount;
+
+  // Send to backend
+  try {
+    const res = await fetch("/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: `message=${encodeURIComponent(text)}&phone=${encodeURIComponent(currentPhone)}`
+    });
+
+    const data = await res.json();
+
+    // Bot reply
+    chat.innerHTML += `
+      <div class="msg bot">
+        ${escapeHtml(data.reply)}
+        <div class="timestamp">${now}</div>
+      </div>
+    `;
+  } catch (error) {
+    chat.innerHTML += `
+      <div class="msg bot">
+        ❌ Error: ${error.message}
+        <div class="timestamp">${now}</div>
+      </div>
+    `;
+  }
+  
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML.replace(/\n/g, '<br>');
+}
+
+// Initialize
+updateQuickCommands();
+
+// Welcome message
+window.onload = () => {
+  const chat = document.getElementById('chat');
+  chat.innerHTML = `
+    <div class="msg bot">
+      👋 Welcome to AI Logistics Agent v2.0!<br><br>
+      Select your role on the right and start chatting.<br><br>
+      Type HELP for available commands.
+      <div class="timestamp">${new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+    </div>
+  `;
+};
+</script>
+
+</body>
+</html>

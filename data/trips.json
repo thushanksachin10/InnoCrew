@@ -1,0 +1,62 @@
+[
+  {
+    "origin": "Pune",
+    "destination": "Delhi",
+    "waypoints": [],
+    "truck_id": "TRK002",
+    "truck_number": "MH02-CD-3344",
+    "driver_phone": "+919876543211",
+    "driver_name": "Suresh Patil",
+    "distance_km": 1359.6,
+    "eta_hours": 24.7,
+    "fuel_cost": 20833.0,
+    "toll_cost": 2039.0,
+    "total_cost": 22872.0,
+    "expected_revenue": 40789.0,
+    "expected_profit": 17916.0,
+    "confidence": 0.9,
+    "fuel_stops": [
+      {
+        "city": "Mid-route",
+        "estimated_fuel": "45%"
+      }
+    ],
+    "load_percent": 0.0,
+    "mileage": 6.2,
+    "condition": "Excellent",
+    "id": "TRIP001",
+    "created_at": "2026-01-31T23:10:01.770741",
+    "status": "pending"
+  },
+  {
+    "origin": "Mumbai",
+    "destination": "Delhi",
+    "waypoints": [],
+    "truck_id": "TRK001",
+    "truck_number": "MH01-AB-2211",
+    "driver_phone": "+919876543210",
+    "driver_name": "Rajesh Kumar",
+    "distance_km": 1341.4,
+    "eta_hours": 24.4,
+    "fuel_cost": 22755.0,
+    "toll_cost": 2012.0,
+    "total_cost": 24767.0,
+    "expected_revenue": 40241.0,
+    "expected_profit": 15474.0,
+    "confidence": 0.9,
+    "fuel_stops": [
+      {
+        "city": "Udaipur",
+        "estimated_fuel": "55%"
+      }
+    ],
+    "load_percent": 0.0,
+    "mileage": 5.6,
+    "condition": "Good",
+    "id": "TRIP002",
+    "created_at": "2026-01-31T23:28:26.489360",
+    "status": "in_progress",
+    "current_location": "Mumbai",
+    "last_updated": "2026-01-31T23:29:17.926635"
+  }
+]
