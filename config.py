@@ -1,5 +1,9 @@
 # config.py
 import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # ========== OPERATIONAL CONSTANTS ==========
 MAX_LOAD_PERCENT = 90  # Maximum safe load percentage
@@ -34,11 +38,11 @@ MIN_LOADING_TIME_HOURS = 2 # Minimum time for loading/unloading
 # ========== API CONFIGURATION ==========
 # GraphHopper API (optional - leave empty to use free tier with limitations)
 # Get your free API key at: https://www.graphhopper.com/
-GRAPHHOPPER_API_KEY = "6e03cd3c-a401-49e1-821c-2d95ceb56721"  # Optional
+GRAPHHOPPER_API_KEY = os.getenv('GRAPHHOPPER_API_KEY', '')
 
 # Mapbox API (optional - for additional routing fallback)
 # Get your free API key at: https://www.mapbox.com/
-MAPBOX_API_KEY = ""  # Optional - add if available
+MAPBOX_API_KEY = os.getenv('MAPBOX_API_KEY', '')
 
 # ========== SYSTEM CONSTANTS ==========
 MAX_RETRY_ATTEMPTS = 3     # Maximum retry attempts for API calls
@@ -62,6 +66,31 @@ MAX_DETOUR_PERCENT = 20    # Maximum 20% detour for additional pickups
 MIN_ADDITIONAL_PROFIT = 5000  # Minimum ₹5000 additional profit for detour
 RE_ROUTE_CHECK_INTERVAL_KM = 100  # Check for re-routing every 100km
 
+# ========== AWS LOCATION SERVICE ==========
+AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
+# AWS credentials are loaded automatically by boto3 from environment variables
+# DO NOT store them here in the code!
+
+# Your Route Calculator name
+AWS_ROUTE_CALCULATOR = os.getenv('AWS_ROUTE_CALCULATOR', 'LogisticsRouteCalculator')
+
+# Data provider (choose one):
+# - "Esri" (default, good global coverage)
+# - "Here" (good for India)
+AWS_DATA_PROVIDER = "Here"
+
+# Travel mode for trucks
+AWS_TRAVEL_MODE = "Truck"
+
+# ========== ROUTING PRIORITY ==========
+USE_AWS_AS_PRIMARY = True    # Use AWS as primary routing service
+FALLBACK_TO_OSRM = True      # Fallback to OSRM if AWS fails
+FALLBACK_TO_HAVERSINE = True # Final fallback to direct distance
+
+# ========== CACHING ==========
+CACHE_AWS_ROUTES = True      # Cache AWS routes to reduce costs
+CACHE_DURATION_MINUTES = 60  # Cache routes for 1 hour
+
 # ========== TRUCK CONSTANTS ==========
 TRUCK_TYPES = {
     "20ft Container": {"capacity_kg": 10000, "avg_mileage": 5.5},
@@ -77,6 +106,22 @@ MAINTENANCE_INTERVAL_KM = 10000  # Maintenance every 10,000 km
 def validate_config():
     """Validate all configuration values"""
     errors = []
+    
+    # Check AWS environment variables
+    aws_access_key = os.getenv('AWS_ACCESS_KEY_ID')
+    aws_secret_key = os.getenv('AWS_SECRET_ACCESS_KEY')
+    
+    if not aws_access_key or aws_access_key.strip() == "":
+        errors.append("AWS_ACCESS_KEY_ID not set in environment (.env file)")
+    
+    if not aws_secret_key or aws_secret_key.strip() == "":
+        errors.append("AWS_SECRET_ACCESS_KEY not set in environment (.env file)")
+    
+    if not AWS_REGION or AWS_REGION.strip() == "":
+        errors.append("AWS_DEFAULT_REGION not set in environment (.env file)")
+    
+    if not AWS_ROUTE_CALCULATOR or AWS_ROUTE_CALCULATOR.strip() == "":
+        errors.append("AWS_ROUTE_CALCULATOR not configured")
     
     # Speed validation
     if AVG_SPEED_KMPH <= 0 or AVG_SPEED_KMPH > 120:
@@ -149,6 +194,15 @@ def validate_config():
     
     print("✓ Configuration validated successfully")
 
+def get_aws_credentials():
+    """Get AWS credentials from environment"""
+    return {
+        'access_key': os.getenv('AWS_ACCESS_KEY_ID'),
+        'secret_key': os.getenv('AWS_SECRET_ACCESS_KEY'),
+        'region': os.getenv('AWS_DEFAULT_REGION', 'us-east-1'),
+        'calculator': os.getenv('AWS_ROUTE_CALCULATOR', 'LogisticsRouteCalculator')
+    }
+
 def get_effective_fuel_price():
     """Get fuel price with potential adjustments"""
     # Could be extended to fetch live prices from API
@@ -189,7 +243,16 @@ def calculate_minimum_rate(distance_km, truck_type="20ft Container"):
 
 # ========== INITIALIZATION ==========
 # Call validation when config is imported
-validate_config()
+try:
+    validate_config()
+except ValueError as e:
+    print(f"❌ {e}")
+    print("\n💡 Make sure you have a .env file with:")
+    print("   AWS_ACCESS_KEY_ID=your-key")
+    print("   AWS_SECRET_ACCESS_KEY=your-secret")
+    print("   AWS_DEFAULT_REGION=us-east-1")
+    print("   AWS_ROUTE_CALCULATOR=LogisticsRouteCalculator")
+    raise
 
 # Export all constants
 __all__ = [
@@ -204,5 +267,8 @@ __all__ = [
     'MESSAGE_MAX_LENGTH', 'UPDATE_INTERVAL_MINUTES', 'NOTIFICATION_HOURS_BEFORE',
     'MAX_DETOUR_PERCENT', 'MIN_ADDITIONAL_PROFIT', 'RE_ROUTE_CHECK_INTERVAL_KM',
     'TRUCK_TYPES', 'DEFAULT_TRUCK_CONDITIONS', 'MAINTENANCE_INTERVAL_KM',
-    'validate_config', 'get_effective_fuel_price', 'calculate_minimum_rate'
+    'AWS_REGION', 'AWS_ROUTE_CALCULATOR', 'AWS_DATA_PROVIDER', 'AWS_TRAVEL_MODE',
+    'USE_AWS_AS_PRIMARY', 'FALLBACK_TO_OSRM', 'FALLBACK_TO_HAVERSINE',
+    'CACHE_AWS_ROUTES', 'CACHE_DURATION_MINUTES',
+    'validate_config', 'get_aws_credentials', 'get_effective_fuel_price', 'calculate_minimum_rate'
 ]

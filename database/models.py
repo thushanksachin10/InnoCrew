@@ -36,6 +36,7 @@ class Database:
             self._save_json(self.loads_file, [])
     
     def _get_default_trucks(self):
+        """Return default trucks with proper status"""
         return [
             {
                 "id": "TRK001",
@@ -160,10 +161,73 @@ class Database:
                 "last_location_update": "2024-01-31T12:15:00",
                 "is_gps_enabled": True,
                 "emergency_contact": "+919999999999"
+            },
+            {
+                "id": "TRK005",
+                "number": "TN05-IJ-9900",
+                "type": "20ft Container",
+                "capacity_kg": 10000,
+                "current_load_kg": 0,
+                "max_load_kg": 10000,
+                "mileage_kmpl": 5.5,
+                "condition": "Good",
+                "location": "Chennai",
+                "status": "available",
+                "driver_phone": "+919876543214",
+                "driver_name": "Karthik Rajan",
+                "fuel_percent": 88,
+                "last_maintenance": "2024-01-25",
+                "current_trip_id": None,
+                "total_distance_km": 110000,
+                "next_maintenance_km": 7000,
+                "insurance_valid_until": "2024-08-31",
+                "permit_valid_until": "2024-08-31",
+                "average_speed_kmph": 56,
+                "fuel_type": "diesel",
+                "owner": "Fast Logistics Pvt Ltd",
+                "purchase_date": "2022-03-12",
+                "year_of_manufacture": 2021,
+                "registration_state": "TN",
+                "current_waypoint": None,
+                "last_location_update": "2024-01-31T13:45:00",
+                "is_gps_enabled": True,
+                "emergency_contact": "+919999999999"
+            },
+            {
+                "id": "TRK006",
+                "number": "WB06-KL-1122",
+                "type": "14ft Truck",
+                "capacity_kg": 7000,
+                "current_load_kg": 0,
+                "max_load_kg": 7000,
+                "mileage_kmpl": 6.0,
+                "condition": "Good",
+                "location": "Kolkata",
+                "status": "available",
+                "driver_phone": "+919876543215",
+                "driver_name": "Arun Sen",
+                "fuel_percent": 82,
+                "last_maintenance": "2024-01-18",
+                "current_trip_id": None,
+                "total_distance_km": 105000,
+                "next_maintenance_km": 4000,
+                "insurance_valid_until": "2024-07-31",
+                "permit_valid_until": "2024-07-31",
+                "average_speed_kmph": 57,
+                "fuel_type": "diesel",
+                "owner": "Fast Logistics Pvt Ltd",
+                "purchase_date": "2022-07-22",
+                "year_of_manufacture": 2021,
+                "registration_state": "WB",
+                "current_waypoint": None,
+                "last_location_update": "2024-01-31T14:30:00",
+                "is_gps_enabled": True,
+                "emergency_contact": "+919999999999"
             }
         ]
     
     def _get_default_users(self):
+        """Return default users"""
         return [
             {
                 "phone": "+919999999999",
@@ -199,11 +263,26 @@ class Database:
     def get_available_trucks(self, origin=None):
         """Get available trucks, optionally filtered by origin"""
         trucks = self.get_all_trucks()
-        available = [t for t in trucks if t.get('status') == 'available']
+        
+        # Debug: Log all trucks and their status
+        logger.debug(f"Total trucks: {len(trucks)}")
+        for truck in trucks:
+            logger.debug(f"  Truck {truck.get('id')}: status={truck.get('status')}, location={truck.get('location')}")
+        
+        # Available trucks are those with status 'available'
+        available = [t for t in trucks if t.get('status', '').lower() == 'available']
+        
+        logger.info(f"Found {len(available)} available trucks out of {len(trucks)} total")
         
         if origin:
-            # Prioritize trucks near origin
-            available.sort(key=lambda t: 0 if t.get('location', '').lower() == origin.lower() else 1)
+            # Prioritize trucks near origin (same city)
+            available_in_origin = [t for t in available if t.get('location', '').lower() == origin.lower()]
+            other_available = [t for t in available if t.get('location', '').lower() != origin.lower()]
+            
+            logger.info(f"Trucks in {origin}: {len(available_in_origin)}, other cities: {len(other_available)}")
+            
+            # Return trucks in origin first, then others
+            return available_in_origin + other_available
         
         return available
     

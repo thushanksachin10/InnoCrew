@@ -1,23 +1,161 @@
-# agent/agent_loop.py
+# agent/agent_loop.py - FINAL VERSION with fair driver distribution
 
 from database.models import db
 from world.route_eval import estimate_eta, estimate_fuel_cost, calculate_toll_cost
 from world.india_graph import get_route
 from agent.confidence import compute_confidence
 from logging_config import get_logger
+import time
 
 logger = get_logger(__name__)
 
+# Track last assigned driver for rotation
+_last_assigned_driver = None
+
+def get_driver_workload():
+    """Get how many trips each driver currently has"""
+    trips = db.get_active_trips()
+    driver_workload = {}
+    
+    for trip in trips:
+        driver_phone = trip.get('driver_phone')
+        if driver_phone:
+            driver_workload[driver_phone] = driver_workload.get(driver_phone, 0) + 1
+    
+    return driver_workload
+
+def rotate_driver_selection(available_trucks):
+    """Ensure fair distribution of trips among drivers"""
+    global _last_assigned_driver
+    
+    if not available_trucks:
+        return None
+    
+    # Get driver workload
+    driver_workload = get_driver_workload()
+    
+    # Filter trucks that are not from the last assigned driver
+    trucks_not_last = [t for t in available_trucks 
+                      if t.get('driver_phone') != _last_assigned_driver]
+    
+    if trucks_not_last:
+        # Sort by workload (drivers with fewer trips first)
+        trucks_not_last.sort(key=lambda t: driver_workload.get(t.get('driver_phone', ''), 0))
+        selected = trucks_not_last[0]
+    else:
+        # If all trucks are from last driver, pick one with least workload
+        available_trucks.sort(key=lambda t: driver_workload.get(t.get('driver_phone', ''), 0))
+        selected = available_trucks[0]
+    
+    # Update last assigned driver
+    _last_assigned_driver = selected.get('driver_phone')
+    
+    return selected
+
 def select_best_truck(origin, destination, distance_km):
-    """Select the best available truck for the trip"""
+    """Select the best available truck for the trip with fair distribution"""
     logger.info(f"Selecting best truck for {origin} → {destination} ({distance_km}km)")
     
     available_trucks = db.get_available_trucks(origin)
-    logger.debug(f"Found {len(available_trucks)} available trucks")
+    logger.info(f"Found {len(available_trucks)} available trucks")
+    
+    # Debug: Show all available trucks
+    for truck in available_trucks:
+        logger.info(f"  - {truck.get('id')}: {truck.get('driver_name')} in {truck.get('location')}")
     
     if not available_trucks:
         logger.warning(f"No available trucks found for origin: {origin}")
         return None
+    
+    # First, try to rotate drivers for fairness
+    rotated_truck = rotate_driver_selection(available_trucks)
+    if rotated_truck:
+        logger.info(f"Using rotated truck: {rotated_truck.get('id')} ({rotated_truck.get('driver_name')})")
+        
+        # Verify this truck is suitable for the trip
+        truck_score = calculate_truck_score(rotated_truck, origin, destination, distance_km)
+        if truck_score >= 0.5:  # Minimum score threshold
+            return rotated_truck
+    
+    # If rotation didn't work or truck score is low, use scoring system
+    return select_best_truck_by_scoring(available_trucks, origin, destination, distance_km)
+
+def calculate_truck_score(truck, origin, destination, distance_km):
+    """Calculate a score for how suitable a truck is for the trip"""
+    score = 0.0
+    
+    # Location match (exact location is best)
+    if truck.get('location', '').lower() == origin.lower():
+        score += 0.4
+    elif 'mumbai' in origin.lower() and 'mumbai' in truck.get('location', '').lower():
+        score += 0.3
+    elif 'pune' in origin.lower() and 'pune' in truck.get('location', '').lower():
+        score += 0.3
+    
+    # Condition score
+    condition = truck.get('condition', 'Good')
+    if condition == 'Excellent':
+        score += 0.2
+    elif condition == 'Good':
+        score += 0.15
+    else:
+        score += 0.1
+    
+    # Fuel level (higher is better)
+    fuel_percent = truck.get('fuel_percent', 50)
+    score += (fuel_percent / 100) * 0.1
+    
+    # Mileage (better mileage for longer trips)
+    mileage = truck.get('mileage_kmpl', 5.0)
+    if distance_km > 500:
+        score += (mileage / 10) * 0.2
+    else:
+        score += (mileage / 10) * 0.1
+    
+    # Capacity for long trips
+    if distance_km > 800:
+        capacity = truck.get('capacity_kg', 10000)
+        score += min(0.1, capacity / 200000)  # Max 0.1 for capacity
+    
+    return min(1.0, score)  # Cap at 1.0
+
+def select_best_truck_by_scoring(available_trucks, origin, destination, distance_km):
+    """Select truck using detailed scoring system"""
+    scored_trucks = []
+    
+    for truck in available_trucks:
+        score = calculate_truck_score(truck, origin, destination, distance_km)
+        driver_workload = get_driver_workload()
+        
+        # Penalty for drivers with more trips (fairness)
+        driver_phone = truck.get('driver_phone')
+        if driver_phone in driver_workload:
+            workload = driver_workload[driver_phone]
+            score -= min(0.3, workload * 0.1)  # Max 0.3 penalty
+        
+        # Bonus for trucks that haven't been used recently
+        last_trip = truck.get('last_trip_time', 0)
+        current_time = time.time()
+        if last_trip and (current_time - last_trip) > 86400:  # 24 hours
+            score += 0.15
+        
+        scored_trucks.append((truck, score, truck.get('driver_name', 'Unknown')))
+    
+    # Log all scores for debugging
+    logger.info("Truck selection scores:")
+    for truck, score, driver_name in scored_trucks:
+        logger.info(f"  {truck.get('id')} ({driver_name}): {score:.2f}")
+    
+    # Sort by score (highest first)
+    scored_trucks.sort(key=lambda x: x[1], reverse=True)
+    
+    if scored_trucks:
+        best_truck = scored_trucks[0][0]
+        best_driver = scored_trucks[0][2]
+        logger.info(f"✅ Selected truck {best_truck.get('id')} for {best_driver}")
+        return best_truck
+    
+    return None
 
 def plan_trip(distance_km, load_percent, mileage_kmpl):
     """Simple trip planning for backward compatibility"""
@@ -26,56 +164,6 @@ def plan_trip(distance_km, load_percent, mileage_kmpl):
     confidence = compute_confidence(load_percent, True, 0.9)  # Assume fuel_ok=True
     
     return eta, fuel_cost, confidence
-
-def select_best_truck(origin, destination, distance_km):
-    """Select the best available truck for the trip"""
-    available_trucks = db.get_available_trucks(origin)
-    
-    if not available_trucks:
-        return None
-    
-    # FIX: Use correct field names from database with .get() for safety
-    scored_trucks = []
-    for truck in available_trucks:
-        score = 0
-        
-        # Condition score
-        if truck.get('condition', 'Good') == 'Excellent':
-            score += 1.2
-        elif truck.get('condition', 'Good') == 'Good':
-            score += 1.0
-        else:
-            score += 0.8
-        
-        # Mileage score (normalize)
-        score += truck.get('mileage_kmpl', 5.0) / 10
-        
-        # Location bonus
-        if truck.get('location', '').lower() == origin.lower():
-            score += 0.5
-        
-        # Fuel level bonus (higher fuel = better)
-        fuel_percent = truck.get('fuel_percent', 50)
-        score += (fuel_percent / 100) * 0.3
-        
-        # Maintenance score (recent maintenance = better)
-        last_maintenance = truck.get('last_maintenance', '2024-01-01')
-        # Simple logic: if maintenance was within last 30 days, add bonus
-        # In production, parse date and calculate
-        score += 0.2  # Placeholder
-        
-        # Truck age penalty (older trucks slightly penalized)
-        year = truck.get('year_of_manufacture', 2020)
-        if year >= 2022:
-            score += 0.1
-        elif year >= 2020:
-            score += 0.05
-        
-        scored_trucks.append((truck, score))
-    
-    # Sort by score and return best
-    scored_trucks.sort(key=lambda x: x[1], reverse=True)
-    return scored_trucks[0][0] if scored_trucks else None
 
 def plan_trip_with_truck(origin, destination, waypoints=None):
     """Plan a complete trip with truck selection"""
@@ -94,18 +182,20 @@ def plan_trip_with_truck(origin, destination, waypoints=None):
     except Exception as e:
         return None, f"Route calculation failed: {str(e)}"
     
-    # Select best truck
+    # Select best truck with fair distribution
     truck = select_best_truck(origin, destination, distance_km)
     
     if not truck:
         return None, "No trucks available"
+    
+    logger.info(f"✅ Selected {truck.get('driver_name')} ({truck.get('id')}) for {origin} → {destination}")
     
     # Calculate costs
     eta_hours = estimate_eta(distance_km)
     fuel_cost = estimate_fuel_cost(distance_km, truck.get('mileage_kmpl', 5.0))
     toll_cost = calculate_toll_cost(distance_km)
     
-    # Calculate load percentage - FIXED: use .get() for safety
+    # Calculate load percentage
     current_load = truck.get('current_load_kg', 0)
     capacity = truck.get('capacity_kg', 10000)
     load_percent = (current_load / capacity) * 100 if capacity > 0 else 0
@@ -116,8 +206,7 @@ def plan_trip_with_truck(origin, destination, waypoints=None):
     confidence = compute_confidence(load_percent, fuel_ok, traffic_score)
     
     # Calculate profit (estimate)
-    # Assuming ₹30 per km as revenue
-    revenue = distance_km * 30
+    revenue = distance_km * 30  # ₹30 per km as revenue
     total_cost = fuel_cost + toll_cost
     profit = revenue - total_cost
     
@@ -145,25 +234,28 @@ def plan_trip_with_truck(origin, destination, waypoints=None):
         'load_percent': round(load_percent, 0),
         'mileage': truck.get('mileage_kmpl', 5.0),
         'condition': truck.get('condition', 'Good'),
-        'truck_fuel_percent': truck.get('fuel_percent', 80),  # ADDED: Track truck's current fuel
+        'truck_fuel_percent': truck.get('fuel_percent', 80),
         'truck_capacity_kg': capacity,
         'truck_current_load_kg': current_load,
-        'available_capacity_kg': capacity - current_load  # ADDED: Available capacity
+        'available_capacity_kg': capacity - current_load
     }
     
     # Save trip to database
     trip = db.create_trip(trip_data)
     
-    # Mark truck as assigned - FIXED: use .get() for safety
+    # Mark truck as assigned
     db.update_truck_status(truck.get('id'), 'assigned')
     
-    # Update truck's current trip ID
+    # Update truck's current trip ID and last trip time
     trucks = db.get_all_trucks()
     for t in trucks:
         if t['id'] == truck.get('id'):
             t['current_trip_id'] = trip['id']
+            t['last_trip_time'] = time.time()  # Track when this truck was last used
             break
     db._save_json(db.trucks_file, trucks)
+    
+    logger.info(f"✅ Trip {trip['id']} created and assigned to {truck.get('driver_name')}")
     
     return trip, None
 
@@ -237,7 +329,7 @@ def accept_trip(trip_id, driver_phone):
     
     db.update_trip_status(trip_id, 'accepted')
     
-    # Update truck status - FIXED: use .get() for safety
+    # Update truck status
     truck_id = trip.get('truck_id')
     if truck_id:
         db.update_truck_status(truck_id, 'in_transit')
@@ -260,7 +352,7 @@ def start_trip(trip_id, location):
         for truck in trucks:
             if truck['id'] == truck_id:
                 truck['location'] = location
-                truck['last_location_update'] = "2024-01-31T12:00:00"  # Should be current timestamp
+                truck['last_location_update'] = time.strftime('%Y-%m-%dT%H:%M:%S')
                 break
         db._save_json(db.trucks_file, trucks)
     
@@ -273,7 +365,6 @@ def complete_trip(trip_id, location):
         return False, "Trip not found"
     
     # Calculate actual profit (simplified)
-    # In real system, you'd calculate based on actual fuel used, tolls, etc.
     actual_profit = trip.get('expected_profit', 0) * 0.95  # 5% variance
     
     # Update trip status
@@ -305,7 +396,7 @@ def complete_trip(trip_id, location):
     for t in trips:
         if t['id'] == trip_id:
             t['actual_profit'] = actual_profit
-            t['end_time'] = "2024-01-31T18:00:00"  # Should be current timestamp
+            t['end_time'] = time.strftime('%Y-%m-%dT%H:%M:%S')
             t['progress_percent'] = 100
             break
     db._save_json(db.trips_file, trips)
@@ -319,8 +410,6 @@ def update_trip_location(trip_id, location):
         return False, "Trip not found"
     
     # Calculate progress percentage
-    # Simplified: assume linear progress
-    # In real system, calculate based on route distance covered
     progress = trip.get('progress_percent', 0)
     if progress < 100:
         progress = min(progress + 10, 95)  # Increment by 10%
@@ -333,6 +422,7 @@ def update_trip_location(trip_id, location):
         if t['id'] == trip_id:
             t['current_location'] = location
             t['progress_percent'] = progress
+            t['last_updated'] = time.strftime('%Y-%m-%dT%H:%M:%S')
             break
     db._save_json(db.trips_file, trips)
     
@@ -375,7 +465,7 @@ def find_enroute_opportunities(truck_id):
                 'pickup': load.get('pickup'),
                 'dropoff': load.get('dropoff'),
                 'additional_revenue': additional_revenue,
-                'detour_estimated': "1-2 hours",  # Simplified
+                'detour_estimated': "1-2 hours",
                 'profit_impact': f"+₹{additional_revenue:,.0f}"
             })
     

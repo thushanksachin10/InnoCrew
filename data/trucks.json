@@ -8,9 +8,10 @@
     "mileage_kmpl": 5.6,
     "condition": "Good",
     "location": "Mumbai",
-    "status": "in_transit",
+    "status": "assigned",
     "driver_phone": "+919876543210",
-    "driver_name": "Rajesh Kumar"
+    "driver_name": "Rajesh Kumar",
+    "current_trip_id": "TRIP008"
   },
   {
     "id": "TRK002",
@@ -23,7 +24,8 @@
     "location": "Pune",
     "status": "assigned",
     "driver_phone": "+919876543211",
-    "driver_name": "Suresh Patil"
+    "driver_name": "Suresh Patil",
+    "current_trip_id": "TRIP007"
   },
   {
     "id": "TRK003",
@@ -36,6 +38,7 @@
     "location": "Delhi",
     "status": "available",
     "driver_phone": "+919876543212",
-    "driver_name": "Amit Sharma"
+    "driver_name": "Amit Sharma",
+    "current_trip_id": null
   }
 ]
