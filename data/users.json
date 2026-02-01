@@ -1,0 +1,93 @@
+[
+  {
+    "phone": "+919999999999",
+    "name": "Manager",
+    "role": "manager",
+    "company": "Fast Logistics Pvt Ltd",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+919876543210",
+    "name": "Rajesh Kumar",
+    "role": "driver",
+    "truck_number": "MH01AB1234",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+919876543211",
+    "name": "Suresh Patel",
+    "role": "driver",
+    "truck_number": "MH12CD5678",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+918888888888",
+    "name": "Regular Customer",
+    "role": "customer",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+917777777777",
+    "name": "Mumbai Post Office",
+    "role": "business",
+    "company": "India Post",
+    "location": "Mumbai",
+    "type": "post_office",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+917777777778",
+    "name": "Vadodara Courier Hub",
+    "role": "business",
+    "company": "Blue Dart",
+    "location": "Vadodara",
+    "type": "courier_hub",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+917777777779",
+    "name": "Delhi Warehouse",
+    "role": "business",
+    "company": "Amazon Logistics",
+    "location": "Delhi",
+    "type": "warehouse",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+917777777780",
+    "name": "Surat Transport",
+    "role": "business",
+    "company": "Surat Goods Transport",
+    "location": "Surat",
+    "type": "transport_company",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+917777777781",
+    "name": "ABC Logistics Pvt Ltd",
+    "role": "business",
+    "company": "ABC Logistics",
+    "location": "Mumbai",
+    "type": "logistics",
+    "created_at": "2024-01-01",
+    "status": "active"
+  },
+  {
+    "phone": "+917777777782",
+    "name": "XYZ Traders",
+    "role": "business",
+    "company": "XYZ Traders",
+    "location": "Pune",
+    "type": "wholesale",
+    "created_at": "2024-01-01",
+    "status": "active"
+  }
+]
