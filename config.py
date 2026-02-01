@@ -1,9 +1,9 @@
 # config.py
 import os
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+#load_dotenv()
 
 # ========== OPERATIONAL CONSTANTS ==========
 MAX_LOAD_PERCENT = 90  # Maximum safe load percentage
