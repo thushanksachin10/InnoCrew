@@ -5,10 +5,10 @@ Test AWS Location Service Setup - FIXED for missing Status field
 """
 import os
 import sys
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
 # Load environment variables FIRST
-load_dotenv()
+#load_dotenv()
 
 print("🔧 Testing AWS Location Service Setup")
 print("="*70)
